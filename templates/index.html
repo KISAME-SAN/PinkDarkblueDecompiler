@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Questions Aléatoires</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #4a4a4a;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        .card {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+        }
+        .card:hover::before {
+            left: 100%;
+        }
+        #question {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin: 0;
+            font-weight: 300;
+        }
+        button, input[type="submit"] {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:hover:not(:disabled), input[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        button:active:not(:disabled), input[type="submit"]:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        #timer {
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            color: #666;
+        }
+        .copy-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .copy-icon:hover {
+            opacity: 1;
+        }
+        .copy-feedback {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .copy-feedback.show {
+            opacity: 1;
+        }
+        #newQuestionForm {
+            margin-top: 2rem;
+            text-align: left;
+        }
+        #newQuestionForm input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Générateur de Questions Aléatoires</h1>
+        <button id="genererBtn" onclick="genererQuestion()">Générer une nouvelle question</button>
+        <div id="timer"></div>
+        <div class="card">
+            <p id="question">Cliquez sur le bouton pour générer une question</p>
+            <svg class="copy-icon" onclick="copierQuestion()" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5 15H4C3.46957 15 2.96086 14.7893 2.58579 14.4142C2.21071 14.0391 2 13.5304 2 13V4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2H13C13.5304 2 14.0391 2.21071 14.4142 2.58579C14.7893 2.96086 15 3.46957 15 4V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="copy-feedback">Copié !</div>
+        </div>
+        <form id="newQuestionForm">
+            <h2>Ajouter une nouvelle question</h2>
+            <input type="text" id="newQuestion" required placeholder="Entrez votre question ici">
+            <input type="submit" value="Ajouter la question">
+        </form>
+    </div>
+
+    <script>
+        let questions = [];
+        const boutonGenerer = document.getElementById('genererBtn');
+        const timerElement = document.getElementById('timer');
+        const delaiEntreQuestions = 120000; // 2 minutes en millisecondes
+
+        // Charger les questions depuis le serveur
+        fetch('/get-questions')
+            .then(response => response.json())
+            .then(data => {
+                questions = data;
+            })
+            .catch(error => console.error('Erreur lors du chargement des questions:', error));
+
+        function genererQuestion() {
+            const maintenant = Date.now();
+            const finDuDelai = parseInt(localStorage.getItem('finDuDelai') || '0');
+
+            if (finDuDelai > maintenant) {
+                const tempsRestant = Math.ceil((finDuDelai - maintenant) / 1000);
+                timerElement.textContent = `Veuillez attendre ${tempsRestant} secondes avant de générer une nouvelle question.`;
+                return;
+            }
+
+            if (questions.length === 0) {
+                document.getElementById('question').textContent = "Aucune question disponible. Veuillez ajouter des questions.";
+                return;
+            }
+
+            const indexAleatoire = Math.floor(Math.random() * questions.length);
+            document.getElementById('question').textContent = questions[indexAleatoire];
+
+            localStorage.setItem('finDuDelai', (maintenant + delaiEntreQuestions).toString());
+            demarrerTimer(delaiEntreQuestions);
+        }
+
+        function demarrerTimer(duree) {
+            boutonGenerer.disabled = true;
+            let tempsRestant = Math.ceil(duree / 1000);
+
+            const intervalId = setInterval(() => {
+                tempsRestant--;
+                if (tempsRestant <= 0) {
+                    clearInterval(intervalId);
+                    boutonGenerer.disabled = false;
+                    timerElement.textContent = '';
+                    localStorage.removeItem('finDuDelai');
+                } else {
+                    timerElement.textContent = `Vous pourrez générer une nouvelle question dans ${tempsRestant} secondes.`;
+                    localStorage.setItem('finDuDelai', (Date.now() + tempsRestant * 1000).toString());
+                }
+            }, 1000);
+        }
+
+        function copierQuestion() {
+            const question = document.getElementById('question').textContent;
+            navigator.clipboard.writeText(question).then(() => {
+                const feedback = document.querySelector('.copy-feedback');
+                feedback.classList.add('show');
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                }, 2000);
+            });
+        }
+
+        // Gérer l'ajout de nouvelles questions
+        document.getElementById('newQuestionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newQuestion = document.getElementById('newQuestion').value.trim();
+            if (newQuestion) {
+                fetch('/add-question', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `question=${encodeURIComponent(newQuestion)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        questions.push(newQuestion);
+                        document.getElementById('newQuestion').value = '';
+                        alert('Question ajoutée avec succès !');
+                    } else {
+                        alert('Erreur lors de l\'ajout de la question.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de l\'ajout de la question.');
+                });
+            }
+        });
+
+        // Vérifier le délai au chargement de la page
+        window.onload = function() {
+            const finDuDelai = parseInt(localStorage.getItem('finDuDelai') || '0');
+            const maintenant = Date.now();
+
+            if (finDuDelai > maintenant) {
+                const tempsRestant = finDuDelai - maintenant;
+                demarrerTimer(tempsRestant);
+            } else {
+                localStorage.removeItem('finDuDelai');
+            }
+        };
+    </script>
+</body>
+</html>
